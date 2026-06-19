@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}History – SmartBank{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="fw-700 mb-0"><i class="bi bi-clock-history text-accent me-2"></i>Transaction History</h4>
+    <a href="{{ url_for('export_csv') }}" class="btn btn-ghost btn-sm">
+      <i class="bi bi-download me-1"></i>Export CSV
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="sb-card mb-4">
+    <div class="sb-card-body py-3">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-sm-4 col-lg-3">
+          <label class="form-label">Search</label>
+          <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Description…"/>
+        </div>
+        <div class="col-sm-3 col-lg-2">
+          <label class="form-label">Type</label>
+          <select class="form-select" name="type">
+            <option value="">All</option>
+            <option value="deposit"      {% if tx_type == 'deposit'       %}selected{% endif %}>Deposit</option>
+            <option value="withdrawal"   {% if tx_type == 'withdrawal'    %}selected{% endif %}>Withdrawal</option>
+            <option value="transfer_in"  {% if tx_type == 'transfer_in'   %}selected{% endif %}>Transfer In</option>
+            <option value="transfer_out" {% if tx_type == 'transfer_out'  %}selected{% endif %}>Transfer Out</option>
+          </select>
+        </div>
+        <div class="col-sm-3 col-lg-2">
+          <label class="form-label">From</label>
+          <input type="date" class="form-control" name="date_from" value="{{ date_from }}"/>
+        </div>
+        <div class="col-sm-3 col-lg-2">
+          <label class="form-label">To</label>
+          <input type="date" class="form-control" name="date_to" value="{{ date_to }}"/>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-accent">Filter</button>
+          <a href="{{ url_for('history') }}" class="btn btn-ghost ms-1">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="sb-card">
+    <div class="sb-card-body p-0">
+      {% if transactions %}
+      <div class="table-responsive">
+        <table class="table sb-table mb-0">
+          <thead>
+            <tr>
+              <th>#</th><th>Type</th><th>Amount</th><th>Balance After</th>
+              <th>Description</th><th>Status</th><th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tx in transactions %}
+            <tr>
+              <td class="text-muted small">{{ tx[0] }}</td>
+              <td>
+                <span class="tx-badge tx-{{ tx[1] }}">
+                  <i class="bi bi-{% if tx[1] in ['deposit','transfer_in'] %}arrow-down-circle{% else %}arrow-up-circle{% endif %} me-1"></i>
+                  {{ tx[1]|replace("_"," ")|title }}
+                </span>
+              </td>
+              <td class="fw-600 {% if tx[1] in ['deposit','transfer_in'] %}text-success{% else %}text-danger{% endif %}">
+                {% if tx[1] in ['deposit','transfer_in'] %}+{% else %}−{% endif %}₹{{ "{:,.2f}".format(tx[2]) }}
+              </td>
+              <td class="text-muted small">₹{{ "{:,.2f}".format(tx[3]) }}</td>
+              <td class="text-muted small">{{ tx[4] or "—" }}</td>
+              <td>
+                {% if tx[6] %}<span class="badge bg-warning text-dark">Suspicious</span>
+                {% elif tx[5] == 'success' %}<span class="badge bg-success">Success</span>
+                {% else %}<span class="badge bg-danger">{{ tx[5]|title }}</span>{% endif %}
+              </td>
+              <td class="text-muted small">{{ tx[7].strftime("%d %b %Y, %H:%M") }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-inbox fs-1 text-muted"></i>
+        <p class="text-muted mt-3">No transactions match your filters.</p>
+        <a href="{{ url_for('history') }}" class="btn btn-ghost btn-sm mt-1">Clear filters</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

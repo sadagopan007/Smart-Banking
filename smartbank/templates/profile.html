@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Profile – SmartBank{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <h4 class="fw-700 mb-4"><i class="bi bi-person text-accent me-2"></i>My Profile</h4>
+
+      <!-- Account summary -->
+      <div class="sb-card mb-4">
+        <div class="sb-card-header"><h6 class="fw-600 mb-0">Account Summary</h6></div>
+        <div class="sb-card-body">
+          <div class="row g-3 text-center">
+            <div class="col-4">
+              <div class="stat-label">Account No.</div>
+              <div class="fw-600 small">{{ acc[0] }}</div>
+            </div>
+            <div class="col-4">
+              <div class="stat-label">Type</div>
+              <div class="fw-600">{{ acc[1]|capitalize }}</div>
+            </div>
+            <div class="col-4">
+              <div class="stat-label">Balance</div>
+              <div class="fw-700 text-accent">₹{{ "{:,.2f}".format(acc[2]) }}</div>
+            </div>
+            <div class="col-4">
+              <div class="stat-label">Transactions</div>
+              <div class="fw-600">{{ stats[0] }}</div>
+            </div>
+            <div class="col-4">
+              <div class="stat-label">Total Volume</div>
+              <div class="fw-600">₹{{ "{:,.0f}".format(stats[1]) }}</div>
+            </div>
+            <div class="col-4">
+              <div class="stat-label">Member Since</div>
+              <div class="fw-600 small">{{ acc[5].strftime("%b %Y") }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit form -->
+      <div class="sb-card">
+        <div class="sb-card-header"><h6 class="fw-600 mb-0">Edit Details</h6></div>
+        <div class="sb-card-body">
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">Full Name</label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                <input type="text" class="form-control" name="full_name" value="{{ user[0] }}" required/>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                <input type="email" class="form-control" value="{{ user[1] }}" disabled/>
+              </div>
+              <small class="text-muted">Email cannot be changed.</small>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">New Password <span class="text-muted">(leave blank to keep current)</span></label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <input type="password" class="form-control" name="new_password" placeholder="Min 8 characters"/>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-accent fw-600">
+              <i class="bi bi-check-circle me-2"></i>Save Changes
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

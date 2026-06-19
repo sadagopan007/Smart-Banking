@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Withdraw – SmartBank{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+
+      <div class="sb-card">
+        <div class="sb-card-header">
+          <h5 class="fw-700 mb-0"><i class="bi bi-arrow-up-circle text-danger me-2"></i>Withdraw Funds</h5>
+        </div>
+        <div class="sb-card-body">
+
+          <div class="balance-pill mb-4">
+            <span class="text-muted small">Available Balance</span>
+            <span class="fw-700 text-accent fs-5">₹{{ "{:,.2f}".format(acc[3]) }}</span>
+          </div>
+
+          {% if acc[2] == 'current' and acc[4] > 0 %}
+          <div class="alert alert-info sb-alert sb-alert-info small py-2 mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            Overdraft limit: ₹{{ "{:,.2f}".format(acc[4]) }} — total available: ₹{{ "{:,.2f}".format(acc[3] + acc[4]) }}
+          </div>
+          {% endif %}
+
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">Amount (₹)</label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" class="form-control" name="amount" min="1" step="0.01"
+                       placeholder="0.00" required autofocus/>
+              </div>
+            </div>
+
+            <div class="quick-amounts mb-3">
+              <span class="text-muted small me-2">Quick:</span>
+              {% for amt in [500, 1000, 2000, 5000] %}
+              <button type="button" class="btn btn-sm btn-outline-secondary quick-amt" data-amt="{{ amt }}">
+                ₹{{ amt }}
+              </button>
+              {% endfor %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">Description <span class="text-muted">(optional)</span></label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text"><i class="bi bi-chat-text"></i></span>
+                <input type="text" class="form-control" name="description" placeholder="ATM, Bills…"/>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">Confirm Password</label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                <input type="password" class="form-control" name="confirm_password"
+                       placeholder="Enter your account password" required/>
+              </div>
+              <small class="text-muted">For your security, confirm your password to complete this withdrawal.</small>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-danger py-2 fw-600">
+                <i class="bi bi-check-circle me-2"></i>Confirm Withdrawal
+              </button>
+              <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="info-box mt-3">
+        <i class="bi bi-shield-exclamation text-warning me-2"></i>
+        Withdrawals beyond your balance are blocked for Savings accounts.
+        Current accounts may use their overdraft facility.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.querySelectorAll(".quick-amt").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelector("input[name=amount]").value = btn.dataset.amt;
+    });
+  });
+</script>
+{% endblock %}

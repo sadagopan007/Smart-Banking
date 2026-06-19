@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – SmartBank{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- Welcome row -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+    <div>
+      <h4 class="fw-700 mb-0">Good {{ "Morning" if now.hour < 12 else ("Afternoon" if now.hour < 17 else "Evening") }},
+        {{ session.user_name.split()[0] }} 👋</h4>
+      <small class="text-muted">Here's your financial overview</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('deposit') }}" class="btn btn-accent btn-sm px-3">
+        <i class="bi bi-plus-circle me-1"></i>Deposit
+      </a>
+      <a href="{{ url_for('withdraw') }}" class="btn btn-outline-light btn-sm px-3">
+        <i class="bi bi-dash-circle me-1"></i>Withdraw
+      </a>
+      <a href="{{ url_for('transfer') }}" class="btn btn-outline-light btn-sm px-3">
+        <i class="bi bi-arrow-left-right me-1"></i>Transfer
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="row g-4 mb-4">
+
+    <!-- Balance -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card stat-card-blue">
+        <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Current Balance</div>
+          <div class="stat-value" id="liveBalance">₹{{ "{:,.2f}".format(acc[3]) }}</div>
+          <div class="stat-sub">{{ acc[2]|capitalize }} Account</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deposits -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card stat-card-green">
+        <div class="stat-icon"><i class="bi bi-arrow-down-circle"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Total Deposited</div>
+          <div class="stat-value">₹{{ "{:,.2f}".format(total_deposits) }}</div>
+          <div class="stat-sub text-success"><i class="bi bi-arrow-up-right"></i> Lifetime</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Withdrawals -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card stat-card-red">
+        <div class="stat-icon"><i class="bi bi-arrow-up-circle"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Total Withdrawn</div>
+          <div class="stat-value">₹{{ "{:,.2f}".format(total_withdrawals) }}</div>
+          <div class="stat-sub text-danger"><i class="bi bi-arrow-down-right"></i> Lifetime</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account number -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card stat-card-purple">
+        <div class="stat-icon"><i class="bi bi-credit-card-2-front"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Account Number</div>
+          <div class="stat-value fs-5">{{ acc[1] }}</div>
+          <div class="stat-sub">{{ acc[2]|capitalize }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="sb-card h-100">
+        <div class="sb-card-header d-flex justify-content-between align-items-center">
+          <h6 class="fw-600 mb-0"><i class="bi bi-bar-chart-line me-2 text-accent"></i>Monthly Overview</h6>
+          <span class="badge badge-accent">Last 6 months</span>
+        </div>
+        <div class="sb-card-body">
+          <canvas id="overviewChart" height="100"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="sb-card h-100">
+        <div class="sb-card-header">
+          <h6 class="fw-600 mb-0"><i class="bi bi-pie-chart me-2 text-accent"></i>Flow Split</h6>
+        </div>
+        <div class="sb-card-body d-flex align-items-center justify-content-center">
+          <canvas id="pieChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="sb-card">
+        <div class="sb-card-header d-flex justify-content-between align-items-center">
+          <h6 class="fw-600 mb-0"><i class="bi bi-clock-history me-2 text-accent"></i>Recent Transactions</h6>
+          <a href="{{ url_for('history') }}" class="btn btn-ghost btn-sm">View All <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
+        <div class="sb-card-body p-0">
+          {% if recent_txs %}
+          <div class="table-responsive">
+            <table class="table sb-table mb-0">
+              <thead>
+                <tr>
+                  <th>Type</th><th>Amount</th><th>Description</th><th>Status</th><th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for tx in recent_txs %}
+                <tr>
+                  <td>
+                    <span class="tx-badge tx-{{ tx[0] }}">
+                      <i class="bi bi-{% if tx[0] == 'deposit' or tx[0] == 'transfer_in' %}arrow-down-circle{% else %}arrow-up-circle{% endif %} me-1"></i>
+                      {{ tx[0]|replace("_"," ")|title }}
+                    </span>
+                  </td>
+                  <td class="fw-600 {% if tx[0] in ['deposit','transfer_in'] %}text-success{% else %}text-danger{% endif %}">
+                    {% if tx[0] in ['deposit','transfer_in'] %}+{% else %}−{% endif %}₹{{ "{:,.2f}".format(tx[1]) }}
+                  </td>
+                  <td class="text-muted small">{{ tx[2] or "—" }}</td>
+                  <td>
+                    {% if tx[4] %}<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Suspicious</span>
+                    {% elif tx[3] == 'success' %}<span class="badge bg-success">Success</span>
+                    {% else %}<span class="badge bg-danger">{{ tx[3]|title }}</span>{% endif %}
+                  </td>
+                  <td class="text-muted small">{{ tx[5].strftime("%d %b, %H:%M") }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state py-5">
+            <i class="bi bi-inbox fs-1 text-muted"></i>
+            <p class="text-muted mt-2">No transactions yet. Make your first deposit!</p>
+            <a href="{{ url_for('deposit') }}" class="btn btn-accent btn-sm">Deposit Now</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions sidebar card -->
+    <div class="col-lg-4">
+      <div class="sb-card">
+        <div class="sb-card-header">
+          <h6 class="fw-600 mb-0"><i class="bi bi-lightning me-2 text-accent"></i>Quick Actions</h6>
+        </div>
+        <div class="sb-card-body d-flex flex-column gap-2">
+          <a href="{{ url_for('deposit') }}"  class="btn btn-outline-success w-100 text-start quick-btn">
+            <i class="bi bi-arrow-down-circle me-2"></i>Deposit Money
+          </a>
+          <a href="{{ url_for('withdraw') }}" class="btn btn-outline-danger w-100 text-start quick-btn">
+            <i class="bi bi-arrow-up-circle me-2"></i>Withdraw Money
+          </a>
+          <a href="{{ url_for('transfer') }}"  class="btn btn-outline-info w-100 text-start quick-btn">
+            <i class="bi bi-arrow-left-right me-2"></i>Send Money
+          </a>
+          <a href="{{ url_for('history') }}"  class="btn btn-outline-secondary w-100 text-start quick-btn">
+            <i class="bi bi-clock-history me-2"></i>Transaction History
+          </a>
+          <a href="{{ url_for('export_csv') }}" class="btn btn-outline-warning w-100 text-start quick-btn">
+            <i class="bi bi-download me-2"></i>Download Statement
+          </a>
+          <a href="{{ url_for('profile') }}"  class="btn btn-outline-light w-100 text-start quick-btn">
+            <i class="bi bi-person me-2"></i>Manage Profile
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── Chart data from Jinja ──────────────────────────────────────────
+const labels    = {{ chart_labels | tojson }};
+const deposits  = {{ chart_deposits | tojson }};
+const withdrawals = {{ chart_withdrawals | tojson }};
+
+const totalDep = deposits.reduce((a,b)=>a+b,0);
+const totalWit = withdrawals.reduce((a,b)=>a+b,0);
+
+// ── Monthly bar chart ─────────────────────────────────────────────
+const ctx1 = document.getElementById("overviewChart").getContext("2d");
+new Chart(ctx1, {
+  type: "bar",
+  data: {
+    labels,
+    datasets: [
+      {
+        label: "Deposits",
+        data: deposits,
+        backgroundColor: "rgba(59,130,246,0.7)",
+        borderColor: "#3b82f6",
+        borderWidth: 2,
+        borderRadius: 6,
+      },
+      {
+        label: "Withdrawals",
+        data: withdrawals,
+        backgroundColor: "rgba(239,68,68,0.7)",
+        borderColor: "#ef4444",
+        borderWidth: 2,
+        borderRadius: 6,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { labels: { color: "#94a3b8" } }
+    },
+    scales: {
+      x: { grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#94a3b8" } },
+      y: { grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#94a3b8", callback: v => "₹"+v.toLocaleString("en-IN") } }
+    }
+  }
+});
+
+// ── Pie chart ─────────────────────────────────────────────────────
+const ctx2 = document.getElementById("pieChart").getContext("2d");
+new Chart(ctx2, {
+  type: "doughnut",
+  data: {
+    labels: ["Deposits","Withdrawals"],
+    datasets: [{
+      data: [totalDep || 1, totalWit || 1],
+      backgroundColor: ["#3b82f6","#ef4444"],
+      borderColor: ["#1d4ed8","#b91c1c"],
+      borderWidth: 2,
+      hoverOffset: 8,
+    }]
+  },
+  options: {
+    cutout: "68%",
+    plugins: {
+      legend: { position: "bottom", labels: { color: "#94a3b8", padding: 16 } }
+    }
+  }
+});
+
+// ── Live balance poll every 30s ───────────────────────────────────
+setInterval(async () => {
+  const res = await fetch("/api/balance");
+  const data = await res.json();
+  document.getElementById("liveBalance").textContent =
+    "₹" + Number(data.balance).toLocaleString("en-IN", {minimumFractionDigits:2});
+}, 30000);
+
+// Inject `now` for greeting
+</script>
+<script>
+  // Supply now for greeting (server-side approach via Jinja is simpler)
+  const hour = new Date().getHours();
+  const greetings = ["Good Morning","Good Afternoon","Good Evening"];
+  // greeting already rendered server-side; this is a no-op fallback
+</script>
+{% endblock %}

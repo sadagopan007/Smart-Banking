@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Transfer – SmartBank{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+      <div class="sb-card">
+        <div class="sb-card-header">
+          <h5 class="fw-700 mb-0"><i class="bi bi-arrow-left-right text-info me-2"></i>Send Money</h5>
+        </div>
+        <div class="sb-card-body">
+          <div class="balance-pill mb-4">
+            <span class="text-muted small">Your Balance</span>
+            <span class="fw-700 text-accent fs-5">₹{{ "{:,.2f}".format(acc[3]) }}</span>
+          </div>
+
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">Recipient Account Number</label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                <input type="text" class="form-control" name="receiver_account"
+                       placeholder="SB0000000000" required autofocus/>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Amount (₹)</label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" class="form-control" name="amount" min="1" step="0.01"
+                       placeholder="0.00" required/>
+              </div>
+            </div>
+
+            <div class="quick-amounts mb-3">
+              <span class="text-muted small me-2">Quick:</span>
+              {% for amt in [500, 1000, 2000, 5000] %}
+              <button type="button" class="btn btn-sm btn-outline-secondary quick-amt" data-amt="{{ amt }}">₹{{ amt }}</button>
+              {% endfor %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">Description <span class="text-muted">(optional)</span></label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text"><i class="bi bi-chat-text"></i></span>
+                <input type="text" class="form-control" name="description" placeholder="Rent, Split bill…"/>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">Confirm Password</label>
+              <div class="input-group sb-input-group">
+                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                <input type="password" class="form-control" name="confirm_password"
+                       placeholder="Enter your account password" required/>
+              </div>
+              <small class="text-muted">For your security, confirm your password to complete this transfer.</small>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-accent py-2 fw-600">
+                <i class="bi bi-send me-2"></i>Send Money
+              </button>
+              <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="info-box mt-3">
+        <i class="bi bi-shield-check text-accent me-2"></i>
+        Transfers are checked by our AI fraud system. Large or unusual transfers may be flagged for review.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.querySelectorAll(".quick-amt").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelector("input[name=amount]").value = btn.dataset.amt;
+    });
+  });
+</script>
+{% endblock %}
